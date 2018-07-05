@@ -44,48 +44,74 @@ endpoint twilio:Client twilioClient {
 
 };
 string[] averages=[];
+string[] subjects;
+int[] index;
 function main(string... args) {
     sendNotification();
 
 }
 
-
-
 function sendNotification() {
     //Retrieve the students' details from spreadsheet.
-
     string[][] values = getStudentDetailsFromGSheet();
-    string[] coulmns=["B","C","D","E"];
+    string[] coulmns=["D","E","F","G"];
     int j=0;
     foreach column in coulmns {
         averages[j]=calculateAverage(column);
         j+=1;
     }
 
-
     int i = 0;
     //Iterate through each student details and send customized email.
     foreach value in values {
+
+        if (i==0) {
+            int subIndex=0;
+            int n=0;
+            //Iterate through the header and find subject names
+            foreach sub in value{
+                //skip student name, parent's email and mobile number fields
+                if (subIndex>2 && sub!=null){
+                    subjects[n]=value[subIndex];
+                    n+=1;
+                }
+                subIndex+=1;
+            }
+        }
+
         //Skip the first row as it contains header values.
-        if (i > 0) {
+        else if (i > 0) {
             float total=0;
+            string[] studentMarks;
             string phone="+";
             string name = value[0];
+            string email= value[1];
+            phone= phone+value[2];
+            //get subject marks
+            int x=0;
+            int pointer=0;
+            foreach sMark in value{
+                if(pointer>=lengthof subjects){
+                    break;
+                }
+                if(x>2){
+                    studentMarks[pointer]=sMark;
+                    pointer+=1;
+                }
+                x+=1;
+            }
+            io:println(studentMarks);
 
-            string maths = value[1];
-            string physics = value[2];
-            string chemistry = value[3];
-            string english = value[4];
-
-            string email= value[5];
-            phone= phone+value[6];
-            total=total+strintToFloat(maths)+strintToFloat(physics)+strintToFloat(chemistry)+strintToFloat(english);
+            // get the total of a student
+            foreach mark in studentMarks{
+                total+=strintToFloat(mark);
+            }
 
             var tot=  <string>total;
-
             string subject = "Progress Report of "+name;
+            index=0...(lengthof (subjects)-1);
 
-            sendMail(email, subject, getReportEmailTemplate(name,maths,physics,chemistry,english,tot));
+            sendMail(email, subject, getReportEmailTemplate(name,studentMarks,tot));
             boolean isSent=sendTextMessage(phone_from,phone,name+"'s "+msg);
         }
         i = i + 1;
@@ -113,7 +139,8 @@ function getStudentDetailsFromGSheet() returns (string[][]) {
 }
 
 
-function getReportEmailTemplate(string name, string maths, string physics,string chemistry, string english,string total) returns (string) {
+function getReportEmailTemplate(string name, string[] marks,string total) returns (string) {
+
     string emailTemplate =
 
 "
@@ -171,35 +198,32 @@ function getReportEmailTemplate(string name, string maths, string physics,string
       </tr>
     </thead>
     <tbody>
-      <tr>
 
-        <td colspan='2'>Mathematics</td>
-        <td>"+maths+"</td>
-        <td> "+gradeGenerator(maths)+"</td>
+      <tr>
+        <td colspan='2'>"+subjects[0]+"</td>
+        <td>"+marks[0]+"</td>
+        <td> "+gradeGenerator(marks[0])+"</td>
         <td>"+averages[0]+"</td>
       </tr>
-      <tr>
 
-        <td colspan='2'>Physics</td>
-
-        <td> "+physics+" </td>
-        <td> "+gradeGenerator(physics)+"</td>
-         <td>"+averages[1]+"</td>
+        <tr>
+        <td colspan='2'>"+subjects[1]+"</td>
+        <td>"+marks[1]+"</td>
+        <td> "+gradeGenerator(marks[1])+"</td>
+        <td>"+averages[1]+"</td>
       </tr>
-      <tr>
 
-        <td colspan='2'>Chemistry</td>
-        <td> "+chemistry+" </td>
-        <td> "+gradeGenerator(chemistry)+"</td>
-         <td>"+averages[2]+"</td>
+       <tr>
+        <td colspan='2'>"+subjects[2]+"</td>
+        <td>"+marks[2]+"</td>
+        <td> "+gradeGenerator(marks[2])+"</td>
+        <td>"+averages[2]+"</td>
       </tr>
-      <tr>
-
-        <td colspan='2'>English</td>
-
-        <td>"+english+"</td>
-        <td> "+gradeGenerator(english)+"</td>
-         <td>"+averages[3]+"</td>
+       <tr>
+        <td colspan='2'>"+subjects[3]+"</td>
+        <td>"+marks[3]+"</td>
+        <td> "+gradeGenerator(marks[3])+"</td>
+        <td>"+averages[3]+"</td>
       </tr>
 
     </tbody>
@@ -221,32 +245,6 @@ function getReportEmailTemplate(string name, string maths, string physics,string
         ";
     return emailTemplate;
 }
-
-
-function sendMail(string customerEmail, string subject, string messageBody) {
-    //Create html message
-    gmail:MessageRequest messageRequest;
-    messageRequest.recipient = customerEmail;
-    messageRequest.sender = senderEmail;
-    messageRequest.subject = subject;
-    messageRequest.messageBody = messageBody;
-    messageRequest.contentType = gmail:TEXT_HTML;
-
-    //Send mail
-    var sendMessageResponse = gmailClient->sendMessage(userId, untaint messageRequest);
-    string messageId;
-    string threadId;
-    match sendMessageResponse {
-        (string, string) sendStatus => {
-            (messageId, threadId) = sendStatus;
-            log:printInfo("Sent email to " + customerEmail + " with message Id: " + messageId + " and thread Id:"
-                    + threadId);
-        }
-        gmail:GmailError e => log:printInfo(e.message);
-    }
-}
-
-
 
 
 function gradeGenerator(string result) returns (string){
