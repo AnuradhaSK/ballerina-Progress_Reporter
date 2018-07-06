@@ -11,12 +11,17 @@ The real world use case scenario of a Educational Institute:
 At the end of a semster/year, the teacher/institute's admin  wants to send students' progress reports to thier parents. Thus, it is comfortable and matches with today's technology to send the progress report via email. However, people will miss their mails due to tight schedules. Thus, sending a notification regarding the sent mail is useful.
 
 The format of progress report which is sent via email.
+
+
 ![sample-mailed progress report](https://lh3.googleusercontent.com/iPQ7HGqsqhFctawnglzYn_V9UXLS1XZrUS17-TkXwOnZXHpkjVg1L2wJsk5kSVfLVJSCRFPq1XzP)
                  
 The following diagram illustrates the interation and integration of connectors and APIs.
+
 ![diagram](https://lh3.googleusercontent.com/9Y_xZ3NeriRb_wi7ymVoTAuPIAineKB3-cbaybKdBcAo6d4JWoARkPsHTVOSRwWv4FUL5dg3grls)
 
 Template of Google Spreadsheet which is used for this application.
+
+
 ![spread sheet](https://lh3.googleusercontent.com/DZAS1nnSMOAqwXn_ZsaWXkFJrU03suD30NixsCyxGVZ7ZUHx8oGFJT2UyY59u_fgKH8u5zFA2Vsv "spreadsheet")
 
 You must configure the `ballerina.conf` configuration file with the tokens, credentials and 
