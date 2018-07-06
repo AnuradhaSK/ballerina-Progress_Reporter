@@ -43,17 +43,22 @@ endpoint twilio:Client twilioClient {
     authToken: config:getAsString("TWILIO_AUTH_TOKEN")
 
 };
+
 string[] averages=[];
 string[] subjects;
 int[] index;
-function main(string... args) {
-    sendNotification();
 
+
+function main(string... args) {
+    sendEmail_Notification();
 }
 
-function sendNotification() {
+//Iterate through each student details and send customized email and notification
+function sendEmail_Notification() {
     //Retrieve the students' details from spreadsheet.
     string[][] values = getStudentDetailsFromGSheet();
+
+    //calculate class average of each subject
     string[] coulmns=["D","E","F","G"];
     int j=0;
     foreach column in coulmns {
@@ -62,9 +67,7 @@ function sendNotification() {
     }
 
     int i = 0;
-    //Iterate through each student details and send customized email.
     foreach value in values {
-
         if (i==0) {
             int subIndex=0;
             int n=0;
@@ -109,15 +112,18 @@ function sendNotification() {
 
             var tot=  <string>total;
             string subject = "Progress Report of "+name;
-            index=0...(lengthof (subjects)-1);
 
+            index=0...(lengthof (subjects)-1);
+            //send an email
             sendMail(email, subject, getReportEmailTemplate(name,studentMarks,tot));
+            //send a notification
             boolean isSent=sendTextMessage(phone_from,phone,name+"'s "+msg);
         }
         i = i + 1;
     }
 }
 
+//convert string to floats
 function strintToFloat(string str) returns(float){
     float result=0;
     var intValue = <float>str;
@@ -129,9 +135,8 @@ function strintToFloat(string str) returns(float){
 
 }
 
-
+//Read all values from the sheet.
 function getStudentDetailsFromGSheet() returns (string[][]) {
-    //Read all the values from the sheet.
     string[][] values = check spreadsheetClient->getSheetValues(spreadsheetId, sheetName, "", "");
     log:printInfo("Retrieved student details from spreadsheet id:" + spreadsheetId + " ;sheet name: "
             + sheetName);
@@ -140,113 +145,112 @@ function getStudentDetailsFromGSheet() returns (string[][]) {
 
 
 function getReportEmailTemplate(string name, string[] marks,string total) returns (string) {
-
-    string emailTemplate =
-
-"
-<head>
-<h2> "+name+"'s Report Card </h2>
+    string template =
+        "<head>
+        <h2> "+name+"'s Report Card </h2>
 
 
-    <style>
-    html {
-    font-family:arial;
-    font-size: 18px;
-    }
+        <style>
+        html {
+        font-family:arial;
+        font-size: 18px;
+        }
 
-    td {
-    border: 1px solid #726E6D;
-    padding: 15px;
-    }
+        td {
+        border: 1px solid #726E6D;
+        padding: 15px;
+        }
 
-    thead{
-    font-weight:bold;
-    text-align:center;
-    background: #625D5D;
-    color:white;
-    }
+        thead{
+        font-weight:bold;
+        text-align:center;
+        background: #625D5D;
+        color:white;
+        }
 
-    table {
-    border-collapse: collapse;
-    }
+        table {
+        border-collapse: collapse;
+        }
 
-    .footer {
-    text-align:right;
-    font-weight:bold;
-    }
+        .footer {
+        text-align:right;
+        font-weight:bold;
+        }
 
-    tbody >tr:nth-child(odd) {
-    background: #D1D0CE;
-    }
+        tbody >tr:nth-child(odd) {
+        background: #D1D0CE;
+        }
 
-    </style>
-     <body>
-     <table>
-    <thead>
-      <tr>
+        </style>
+        <body>
+        <table>
+        <thead>
+        <tr>
         <td colspan='2'>Subject </td>
-
         <td colspan='2'> Grade </td>
         <td colspan='2'> Class Average </td>
-      </tr>
-      <tr>
+        </tr>
 
+        <tr>
         <td colspan='2'>  </td>
         <td> Mark </td>
         <td> Letter </td>
         <td colspan='2'>  </td>
-      </tr>
-    </thead>
-    <tbody>
+        </tr>
+        </thead>
 
-      <tr>
+        <tbody>
+
+        <tr>
         <td colspan='2'>"+subjects[0]+"</td>
         <td>"+marks[0]+"</td>
         <td> "+gradeGenerator(marks[0])+"</td>
         <td>"+averages[0]+"</td>
-      </tr>
+        </tr>
 
         <tr>
         <td colspan='2'>"+subjects[1]+"</td>
         <td>"+marks[1]+"</td>
         <td> "+gradeGenerator(marks[1])+"</td>
         <td>"+averages[1]+"</td>
-      </tr>
+        </tr>
 
-       <tr>
+        <tr>
         <td colspan='2'>"+subjects[2]+"</td>
         <td>"+marks[2]+"</td>
         <td> "+gradeGenerator(marks[2])+"</td>
         <td>"+averages[2]+"</td>
-      </tr>
-       <tr>
+        </tr>
+
+        <tr>
         <td colspan='2'>"+subjects[3]+"</td>
         <td>"+marks[3]+"</td>
         <td> "+gradeGenerator(marks[3])+"</td>
         <td>"+averages[3]+"</td>
-      </tr>
+        </tr>
 
-    </tbody>
-    <tfoot>
-      <tr>
+        </tbody>
+        <tfoot>
+
+        <tr>
         <td colspan='2' class='footer'>Total</td>
         <td colspan='3'>"+total+"</td>
-      </tr>
-      <tr>
+        </tr>
+
+        <tr>
         <td colspan='2' class='footer'>Average</td>
         <td colspan='3'>"+<string>(strintToFloat(total)/4)+" </td>
-      </tr>
-  </table>";
+        </tr>
+        </table>
 
-
-        emailTemplate = emailTemplate + "<p> If you have any questions regarding " + name+
+        <p> If you have any questions regarding " + name+
         "'s report, please contact us</p>
-</body>
-        ";
-    return emailTemplate;
+        </body>";
+
+    return template;
 }
 
-
+//generate the corresponding letter to the mark
 function gradeGenerator(string result) returns (string){
     float intResult=strintToFloat(result);
     string grade;
@@ -272,6 +276,7 @@ function gradeGenerator(string result) returns (string){
     return grade;
 }
 
+//read column data of subjects and return the average
 function  calculateAverage(string column) returns (string){
     float average=0;
     float subTotal=0;
